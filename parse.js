@@ -101,14 +101,17 @@ function parse (str) {
 
     if (next === 'struct') return parseStruct()
     if (next === 'typedef') return parseTypedef()
-    if (next === '{') return skipUntil('}')
+    if (next === '{') return skipBlock()
 
     return null
   }
 
-  function skipUntil (token) {
-    while (tokens.length) {
-      if (pop() === token) break
+  function skipBlock () {
+    var depth = 1
+    while (tokens.length && depth) {
+      const next = pop()
+      if (next === '{') depth++
+      else if (next === '}') depth--
     }
     return null
   }
@@ -119,7 +122,7 @@ function parse (str) {
 
     if (name !== '{') {
       result.name = name
-      if (pop() !== '{') throw new Error('Expecting {')
+      if (pop() !== '{') return null
     }
 
     var field = null
