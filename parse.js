@@ -25,59 +25,58 @@ function align (n, a) {
   return n + (a - rem)
 }
 
-function postProcess (v, structs) {
-  if (v.size > 0) return v.size
+function filter (str) {
+  const tokens = [
+    {start: '"', end: '"', index: -1},
+    {start: '/*', end: '*/', index: -1},
+    {start: '//', end: '\n', index: -1}
+  ]
 
-  if (v.node === 'struct') {
-    var offset = 0
-    for (var i = 0; i < v.fields.length; i++) {
-      const f = v.fields[i]
-      postProcess(f, structs)
-      v.alignment = Math.max(f.alignment, v.alignment)
-      offset = align(offset, f.alignment)
-      f.offset = offset
-      offset += f.size
+  while (true) {
+    const token = nextToken()
+    if (!token) return str
+    str = str.slice(0, token.index) + 'X' + str.slice(nextEnd(token))
+  }
+
+  function nextEnd (token) {
+    var index = token.index + token.start.length
+
+    while (true) {
+      index = str.indexOf(token.end, index)
+      if (index === -1) return str.length
+      if (str[index - 1] !== '\\') return index + token.end.length
+      index++
     }
-    v.size = align(offset, v.alignment)
-    return
   }
 
-  if (v.node !== 'decl') return
+  function nextToken () {
+    var min = null
 
-  var size = 0
-  if (v.pointer) {
-    v.alignment = size = SIZEOF_PTR
-  } else if (PRIMITIVE_SIZES[v.type]) {
-    v.alignment = size = PRIMITIVE_SIZES[v.type]
-  } else {
-    const struct = lookupStruct(v.type, structs)
-    v.alignment = struct.alignment
-    size = struct.size
-    v.struct = true
+    tokens.forEach(function (token) {
+      token.index = str.indexOf(token.start)
+      if (token.index > -1 && (!min || min.index > token.index)) min = token
+    })
+
+    return min
   }
-
-  if (v.array > -1) v.size = v.array * size
-  else v.size = size
 }
 
-function lookupStruct (type, structs) {
-  for (var i = 0; i < structs.length; i++) {
-    if (structs[i].name === type) return structs[i]
-  }
-  throw new Error('Unknown struct: ' + type)
+function assign (def, obj) {
+  if (!obj) return def
+  return Object.assign({}, def, obj)
 }
 
-function trimComments (str) {
-  str = str.replace(/\/\/.+\n/g, '')
-  return str
-}
+function parse (str, opts) {
+  if (!opts) opts = {}
 
-function parse (str) {
-  const tokens = trimComments(str).split(/(;|\s+)/gm).filter(s => !/^(;|\s)*$/.test(s)).reverse()
+  const alignments = opts.alignments || {}
+  const defines = assign({}, opts.defines)
+  const sizes = assign(PRIMITIVE_SIZES, opts.sizes)
+  const tokens = filter(str).split(/(;|\s+)/gm).filter(s => !/^(;|\s)*$/.test(s)).reverse()
   const structs = []
 
   while (tokens.length) parseNext()
-  structs.forEach(s => postProcess(s, structs))
+  structs.forEach(postProcess)
   return structs
 
   function pop () {
@@ -104,6 +103,7 @@ function parse (str) {
     if (next === 'struct') return parseStruct()
     if (next === 'typedef') return parseTypedef()
     if (next === '{') return skipBlock()
+    if (next === '#define') return parseDefine()
 
     return null
   }
@@ -116,6 +116,20 @@ function parse (str) {
       else if (next === '}') depth--
     }
     return null
+  }
+
+  function parseDefine () {
+    const name = pop()
+    if (!validId(name)) throw new Error('Invalid define: ' + name)
+    const value = pop()
+    defines[name] = value
+    return null
+  }
+
+  function resolveValue (name) {
+    if (defines.hasOwnProperty(name)) return resolveValue(defines[name])
+    if (/^\d+(\.\d+)?$/.test(name)) return Number(name)
+    return name
   }
 
   function parseStruct () {
@@ -135,7 +149,7 @@ function parse (str) {
   }
 
   function parseStructField () {
-    const field = {node: 'decl', type: pop(), name: null, size: 0, offset: 0, array: -1, struct: false, pointer: false, alignment: 1}
+    const field = {node: 'field', type: pop(), name: null, size: 0, offset: 0, array: -1, struct: false, pointer: false, alignment: 1}
 
     if (field.type === '}') return null
 
@@ -157,7 +171,7 @@ function parse (str) {
 
     if (arr) {
       field.name = name.slice(0, name.lastIndexOf('['))
-      field.array = Number(arr) // TODO: support constants
+      field.array = resolveValue(arr)
     } else {
       field.name = name
     }
@@ -173,6 +187,49 @@ function parse (str) {
     if (!validId(name)) throw new Error('Invalid typedef name: ' + name)
     if (value.node === 'struct') value.name = name
     return value
+  }
+
+  function postProcess (v) {
+    if (v.size > 0) return v.size
+
+    if (v.node === 'struct') {
+      var offset = 0
+      for (var i = 0; i < v.fields.length; i++) {
+        const f = v.fields[i]
+        postProcess(f)
+        v.alignment = Math.max(f.alignment, v.alignment)
+        offset = align(offset, f.alignment)
+        f.offset = offset
+        offset += f.size
+      }
+      v.size = align(offset, v.alignment)
+      return
+    }
+
+    if (v.node !== 'field') return
+
+    var size = 0
+    if (v.pointer) {
+      v.alignment = size = sizes['*'] || SIZEOF_PTR
+    } else if (sizes[v.type]) {
+      size = sizes[v.type]
+      v.alignment = alignments[v.type] || size
+    } else {
+      const struct = lookupStruct(v.type)
+      v.alignment = struct.alignment
+      size = struct.size
+      v.struct = true
+    }
+
+    if (v.array > -1) v.size = v.array * size
+    else v.size = size
+  }
+
+  function lookupStruct (type) {
+    for (var i = 0; i < structs.length; i++) {
+      if (structs[i].name === type) return structs[i]
+    }
+    throw new Error('Unknown struct: ' + type)
   }
 }
 

@@ -6,7 +6,12 @@
   "dependencies": {
     "generate-function": "^2.0.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "tape": "^4.9.1"
+  },
+  "scripts": {
+    "test": "tape test/*.js"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/mafintosh/shared-structs.git"
