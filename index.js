@@ -3,8 +3,8 @@ const genfun = require('generate-function')
 
 module.exports = compile
 
-function compile (src) {
-  const structs = parse(src.toString())
+function compile (src, opts) {
+  const structs = parse(src.toString(), opts)
   const cache = {}
 
   structs.forEach(function (s) {

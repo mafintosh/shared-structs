@@ -31,11 +31,13 @@ struct.buf[0] = 42
 console.log(struct.rawBuffer)
 ```
 
+Also supports nested structs and most other things you'd normally use in c!
+
 See [example/example.js](example/example.js) for more.
 
 ## API
 
-#### `structs = sharedStructs(src)`
+#### `structs = sharedStructs(src, [options])`
 
 Parses the structs specified in the global scope of src
 and returns JavaScript implementations of each.
@@ -45,6 +47,22 @@ get/set.
 
 All changes are reflected in `.rawBuffer` which you can pass to a c program
 and parse with the same struct.
+
+Options include:
+
+```js
+{
+  defines: {
+    CUSTOM_DEFINE_HERE: 42 // add a custom define is defined elsewhere
+  },
+  sizes: {
+    foo: 1024 // set the size of struct foo if defined elsewhere
+  },
+  alignment: {
+    foo: 8 // set the alignment of struct foo if defined elsewhere
+  }
+}
+```
 
 ## Writing strings
 
