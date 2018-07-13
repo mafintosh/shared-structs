@@ -88,10 +88,12 @@ function arrayView (type, offset, size) {
 
 function typeSize (a) {
   switch (a) {
+    case 'Float32Array':
     case 'Uint32Array':
     case 'Int32Array':
     return 4
 
+    case 'Float64Array':
     case 'Uint16Array':
     case 'Int16Array':
     return 2
@@ -102,6 +104,12 @@ function typeSize (a) {
 
 function arrayType (type) {
   switch (type) {
+    case 'float':
+    return 'Float32Array'
+
+    case 'double':
+    return 'Float64Array'
+
     case 'int':
     case 'int32_t':
     return 'Int32Array'

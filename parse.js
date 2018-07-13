@@ -12,7 +12,9 @@ const PRIMITIVE_SIZES = {
   int64_t: 8,
   char: 1,
   byte: 1,
-  bool: 1
+  bool: 1,
+  float: 4,
+  double: 8
 }
 
 module.exports = parse
