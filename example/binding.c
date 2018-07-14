@@ -1,6 +1,5 @@
 #include <node_api.h>
 #include <napi-macros.h>
-#include <stdio.h>
 #include <string.h>
 
 struct things {
@@ -31,9 +30,6 @@ NAPI_METHOD(copy_string) {
 }
 
 NAPI_INIT() {
-  NAPI_EXPORT_SIZEOF_STRUCT(things)
-  NAPI_EXPORT_ALIGNMENTOF_STRUCT(things)
-
   NAPI_EXPORT_FUNCTION(copy_string)
   NAPI_EXPORT_FUNCTION(tick)
 }
