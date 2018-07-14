@@ -88,6 +88,20 @@ strings.encode('hello world', struct.buf)
 console.log(strings.decode(struct.buf))
 ```
 
+## Requiring .h files
+
+If you have your structs defined in a .h (or any file) there is a
+helper included in `require('shared-structs/require')` that can require
+these and perse them then as you would any other .js file
+
+```js
+const structs = require('shared-structs/require')('file.h')
+
+console.log(structs) // same as loading the src of file.h and parsing it
+```
+
+If you want to pass options, pass them after the filename.
+
 ## License
 
 MIT
