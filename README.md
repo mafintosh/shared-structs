@@ -55,6 +55,8 @@ If you are using this with a native module, make sure to keep a reference to the
 struct in JavaScript (unless you know what you are doing) to avoid the buffer getting garbage
 collected, while you are still using it in your native code.
 
+If you are compiling a struct, that has a field that `shared-structs` cannot determine the size and alignment of deterministicly, it will throw an error. If you use the [napi-macros](https://github.com/mafintosh/napi-macros) module, you can easily export these from your native code using the `NAPI_EXPORT_SIZEOF` and `NAPI_EXPORT_ALIGNMENT` macros and pass them in as options.
+
 Options include:
 
 ```js
