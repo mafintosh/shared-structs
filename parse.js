@@ -27,8 +27,8 @@ function align (n, a) {
 
 function filter (str) {
   const tokens = [
-    {start: '"', end: '"', index: -1, replace: 'X'},
-    {start: '/*', end: '*/', index: -1, replace: 'X'},
+    {start: '"', end: '"', index: -1, replace: "''"},
+    {start: '/*', end: '*/', index: -1, replace: ''},
     {start: '//', end: '\n', index: -1, replace: '\n'}
   ]
 
@@ -72,9 +72,12 @@ function parse (str, opts) {
   const alignments = opts.alignments || {}
   const defines = assign({}, opts.defines)
   const sizes = assign(PRIMITIVE_SIZES, opts.sizes)
-  const tokens = filter(str).split(/(;|\s+)/gm).filter(s => !/^(;|\s)*$/.test(s)).reverse()
-  const structs = []
+  const tokens = resolveStatic(filterDefines(filter(str), defines), defines)
+    .split(/(;|\s+)/gm)
+    .filter(s => !/^(;|\s)*$/.test(s))
+    .reverse()
 
+  const structs = []
   while (tokens.length) parseNext()
   structs.forEach(postProcess)
   return structs
@@ -103,7 +106,6 @@ function parse (str, opts) {
     if (next === 'struct') return parseStruct()
     if (next === 'typedef') return parseTypedef()
     if (next === '{') return skipBlock()
-    if (next === '#define') return parseDefine()
 
     return null
   }
@@ -116,20 +118,6 @@ function parse (str, opts) {
       else if (next === '}') depth--
     }
     return null
-  }
-
-  function parseDefine () {
-    const name = pop()
-    if (!validId(name)) throw new Error('Invalid define: ' + name)
-    const value = pop()
-    defines[name] = value
-    return null
-  }
-
-  function resolveValue (name) {
-    if (defines.hasOwnProperty(name)) return resolveValue(defines[name])
-    if (/^\d+(\.\d+)?$/.test(name)) return Number(name)
-    return name
   }
 
   function parseStruct () {
@@ -170,13 +158,13 @@ function parse (str, opts) {
     var index = field.name.length
     while ((index = field.name.lastIndexOf('[', index)) > -1) {
       const end = field.name.indexOf(']', index)
-      if (end === -1) throw new Error('Invalid struct field array:' + field.name)
+      if (end === -1) throw new Error('Invalid struct field array: ' + field.name)
       const val = field.name.slice(index + 1, end)
       field.name = field.name.slice(0, index)
       index--
 
       if (!field.array) field.array = []
-      field.array.unshift(resolveValue(val))
+      field.array.unshift(resolveUint(val))
     }
 
     if (!validId(field.name)) throw new Error('Invalid struct field name: ' + field.name)
@@ -236,10 +224,47 @@ function parse (str, opts) {
   }
 }
 
+function resolveStatic (src, defines) {
+  if (!/^\w+$/.test(src) || defines.hasOwnProperty(src)) {
+    const keys = Object.keys(defines)
+    for (var i = 0; i < keys.length; i++) {
+      const key = keys[i]
+      const reg = new RegExp('([^\\w])' + key + '([^\\w])', 'g')
+      src = src.replace(reg, function (_, start, end) {
+        return start + resolveStatic(defines[key], defines) + end
+      })
+    }
+  }
+
+  src = src.replace(/\[([^\]]+)\]/g, function (_, num) {
+    if (/^\d+$/.test(num)) return _
+    if (/^[0-9+\-*/>< ()&]+$/.test(num)) return '[' + evalNumber(num) + ']'
+    return _
+  })
+
+  return src
+}
+
+function resolveUint (name) {
+  if (/^\d+$/.test(name)) return Number(name)
+  throw new Error('Expected ' + name + ' to be an unsigned integer')
+}
+
+function filterDefines (src, defines) {
+  return src.replace(/#define\s+(\S+)+\s+(\S+)/g, function (_, name, val) {
+    if (!defines.hasOwnProperty(name)) defines[name] = val
+    return ''
+  })
+}
+
 function times (a, b) {
   return a * b
 }
 
 function validId (n) {
   return /^[a-z_]([a-z0-9_])*$/i.test(n)
+}
+
+function evalNumber (expr) {
+  return new Function('return (' + expr + ')')()
 }
