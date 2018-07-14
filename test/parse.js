@@ -19,7 +19,7 @@ tape('parse basic', function (t) {
       name: 'i',
       struct: false,
       pointer: false,
-      array: -1,
+      array: null,
       size: 4,
       offset: 0,
       alignment: 4
@@ -65,10 +65,38 @@ tape('parse basic with comments and noise', function (t) {
       name: 'i',
       struct: false,
       pointer: false,
-      array: -1,
+      array: null,
       size: 4,
       offset: 0,
       alignment: 4
+    }]
+  }])
+
+  t.end()
+})
+
+tape('multi dim array', function (t) {
+  const structs = parse(`
+    struct foo {
+      char buf[10][12]
+    }
+  `)
+
+  t.same(structs, [{
+    node: 'struct',
+    name: 'foo',
+    alignment: 1,
+    size: 10 * 12,
+    fields: [{
+      node: 'field',
+      type: 'char',
+      name: 'buf',
+      struct: false,
+      pointer: false,
+      array: [10, 12],
+      size: 10 * 12,
+      offset: 0,
+      alignment: 1
     }]
   }])
 

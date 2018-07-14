@@ -4,17 +4,52 @@ const genfun = require('generate-function')
 module.exports = compile
 
 function compile (src, opts) {
+  if (!opts) opts = {}
+
   const structs = parse(src.toString(), opts)
   const cache = {}
 
   structs.forEach(function (s) {
-    compileStruct(s, cache)
+    compileStruct(s, cache, opts)
   })
 
   return cache
 }
 
-function compileStruct (s, cache) {
+function sep (i, len) {
+  return i < len - 1 ? ',' : ''
+}
+
+function compileArray (fn, f) {
+  var offset = f.offset
+  var size = f.size
+  const primitive = arrayType(f.type)
+  const fin = primitive ? f.array.length - 1 : f.array.length
+  for (var i = 0; i < fin; i++) size /= f.array[i]
+
+  fn('this.%s = [', f.name)
+  visit(0, '')
+  fn(']')
+
+  function visit (i, s) {
+    const len = f.array[i]
+    if (i === fin) {
+      if (primitive) fn('%s%s', arrayView(f.type, offset, size), s)
+      else if (offset) fn('%s(this.rawBuffer, offset + %i)%s', f.type, offset, s)
+      else fn('%s(this.rawBuffer, offset)%s', f.type, s)
+      offset += size
+    } else {
+      if (i) fn('[')
+      for (var j = 0; j < len; j++) visit(i + 1, sep(j, len))
+      if (i) fn(']%s', s)
+    }
+  }
+}
+
+function compileStruct (s, cache, opts) {
+  const skip = opts.skip || {}
+  if (skip[s.name]) return
+
   const fn = genfun('class struct_%s {', s.name)
 
   fn('constructor (buffer, offset) {')
@@ -22,21 +57,20 @@ function compileStruct (s, cache) {
   fn('this.rawArrayBuffer = this.rawBuffer.buffer')
 
   s.fields.forEach(function (f) {
+    if (skip[s.name + '.' + f.name]) return
+
     const v = arrayView(f.type, f.offset, f.size)
 
     if (v) {
-      if (f.array > -1) {
-        fn('this.%s = %s', f.name, v)
+      if (f.array) {
+        if (f.array.length === 1) fn('this.%s = %s', f.name, v)
+        else compileArray(fn, f)
       } else {
         fn('this._%s = %s', f.name, v)
       }
     } else if (f.struct) {
-      if (f.array > -1) {
-        fn('this.%s = [', f.name)
-        for (var i = 0; i < f.array; i++) {
-          fn('%s(this.rawBuffer, offset + %i)%s', f.type, f.offset + i * (f.size / f.array), i < f.array - 1 ? ',' : '')
-        }
-        fn(']')
+      if (f.array) {
+        compileArray(fn, f)
       } else {
         fn('this.%s = %s(this.rawBuffer, offset + %i)', f.name, f.type, f.offset)
       }
@@ -46,7 +80,8 @@ function compileStruct (s, cache) {
   fn('}')
 
   s.fields.forEach(function (f) {
-    if (f.array > -1 || !arrayType(f.type)) return
+    if (skip[s.name + '.' + f.name]) return
+    if (f.array || !arrayType(f.type)) return
 
     fn('get %s () {', f.name)
       ('return this._%s[0]', f.name)
@@ -82,7 +117,11 @@ function compileStruct (s, cache) {
 function arrayView (type, offset, size) {
   const a = arrayType(type)
   if (!a) return null
-  if (a === 'Buffer') return 'this.rawBuffer.slice(offset + ' + offset + ', offset + ' + (offset + size) + ')'
+  if (a === 'Buffer') {
+    if (!offset) return 'this.rawBuffer.slice(offset, offset + ' + size + ')'
+    return 'this.rawBuffer.slice(offset + ' + offset + ', offset + ' + (offset + size) + ')'
+  }
+  if (!offset) return 'new ' + a + '(this.rawArrayBuffer, offset, ' + (size / typeSize(a)) + ')'
   return 'new ' + a + '(this.rawArrayBuffer, offset + ' + offset + ', ' + (size / typeSize(a)) + ')'
 }
 

@@ -27,15 +27,15 @@ function align (n, a) {
 
 function filter (str) {
   const tokens = [
-    {start: '"', end: '"', index: -1},
-    {start: '/*', end: '*/', index: -1},
-    {start: '//', end: '\n', index: -1}
+    {start: '"', end: '"', index: -1, replace: 'X'},
+    {start: '/*', end: '*/', index: -1, replace: 'X'},
+    {start: '//', end: '\n', index: -1, replace: '\n'}
   ]
 
   while (true) {
     const token = nextToken()
     if (!token) return str
-    str = str.slice(0, token.index) + 'X' + str.slice(nextEnd(token))
+    str = str.slice(0, token.index) + token.replace + str.slice(nextEnd(token))
   }
 
   function nextEnd (token) {
@@ -149,7 +149,7 @@ function parse (str, opts) {
   }
 
   function parseStructField () {
-    const field = {node: 'field', type: pop(), name: null, size: 0, offset: 0, array: -1, struct: false, pointer: false, alignment: 1}
+    const field = {node: 'field', type: pop(), name: null, size: 0, offset: 0, array: null, struct: false, pointer: false, alignment: 1}
 
     if (field.type === '}') return null
 
@@ -160,20 +160,23 @@ function parse (str, opts) {
 
     if (!validId(field.type)) throw new Error('Invalid struct field type: ' + field.type)
 
-    var name = pop()
+    field.name = pop()
 
-    if (name === '*') {
+    if (field.name === '*') {
       field.pointer = true
-      name = pop()
+      field.name = pop()
     }
 
-    const arr = (name.match(/\[([^\]]+)\]$/) || [null, null])[1]
+    var index = field.name.length
+    while ((index = field.name.lastIndexOf('[', index)) > -1) {
+      const end = field.name.indexOf(']', index)
+      if (end === -1) throw new Error('Invalid struct field array:' + field.name)
+      const val = field.name.slice(index + 1, end)
+      field.name = field.name.slice(0, index)
+      index--
 
-    if (arr) {
-      field.name = name.slice(0, name.lastIndexOf('['))
-      field.array = resolveValue(arr)
-    } else {
-      field.name = name
+      if (!field.array) field.array = []
+      field.array.unshift(resolveValue(val))
     }
 
     if (!validId(field.name)) throw new Error('Invalid struct field name: ' + field.name)
@@ -221,7 +224,7 @@ function parse (str, opts) {
       v.struct = true
     }
 
-    if (v.array > -1) v.size = v.array * size
+    if (v.array) v.size = v.array.reduce(times) * size
     else v.size = size
   }
 
@@ -231,6 +234,10 @@ function parse (str, opts) {
     }
     throw new Error('Unknown struct: ' + type)
   }
+}
+
+function times (a, b) {
+  return a * b
 }
 
 function validId (n) {
