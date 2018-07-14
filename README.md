@@ -31,7 +31,7 @@ struct.buf[0] = 42
 console.log(struct.rawBuffer)
 ```
 
-Also supports nested structs, multidimensional arrays and most other things you'd normally use in c!
+Also supports nested structs, multidimensional arrays, defines, constant expressions, and most other things you'd normally use in c!
 
 See [example/example.js](example/example.js) for more.
 
