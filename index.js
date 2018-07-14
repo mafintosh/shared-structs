@@ -54,6 +54,7 @@ function compileStruct (s, cache, opts) {
 
   fn('constructor (buffer, offset) {')
   fn('this.rawBuffer = buffer')
+  fn('this.rawBufferSlice = buffer.slice(offset)')
   fn('this.rawArrayBuffer = this.rawBuffer.buffer')
 
   s.fields.forEach(function (f) {

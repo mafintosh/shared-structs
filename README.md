@@ -31,7 +31,7 @@ struct.buf[0] = 42
 console.log(struct.rawBuffer)
 ```
 
-Also supports nested structs and most other things you'd normally use in c!
+Also supports nested structs, multidimensional arrays and most other things you'd normally use in c!
 
 See [example/example.js](example/example.js) for more.
 
@@ -47,6 +47,13 @@ get/set.
 
 All changes are reflected in `.rawBuffer` which you can pass to a c program
 and parse with the same struct.
+
+If you want to pass a nested struct to c, use the `.rawBufferSlice` to get a pointer
+directly to this struct instead of `.rawBuffer`.
+
+If you are using this with a native module, make sure to keep a reference to the allocated
+struct in JavaScript (unless you know what you are doing) to avoid the buffer getting garbage
+collected, while you are still using it in your native code.
 
 Options include:
 
