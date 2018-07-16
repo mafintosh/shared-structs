@@ -193,7 +193,8 @@ function parse (str, opts) {
         f.offset = offset
         offset += f.size
       }
-      v.size = align(offset, v.alignment)
+      if (alignments[v.type]) v.alignment = alignments[v.type]
+      v.size = sizes[v.type] || align(offset, v.alignment)
       return
     }
 
