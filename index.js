@@ -59,6 +59,7 @@ function compileStruct (s, cache, opts) {
 
   s.fields.forEach(function (f) {
     if (skip[s.name + '.' + f.name]) return
+    if (f.pointer) return
 
     const v = arrayView(f.type, f.offset, f.size)
 
@@ -82,7 +83,7 @@ function compileStruct (s, cache, opts) {
 
   s.fields.forEach(function (f) {
     if (skip[s.name + '.' + f.name]) return
-    if (f.array || !arrayType(f.type)) return
+    if (f.array || !arrayType(f.type) || f.pointer) return
 
     fn('get %s () {', f.name)
       ('return this._%s[0]', f.name)
