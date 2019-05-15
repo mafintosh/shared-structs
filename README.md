@@ -3,7 +3,7 @@
 Share a struct backed by the same underlying buffer between C and JavaScript
 
 ```
-npm install shared-struct
+npm install shared-structs
 ```
 
 Useful for doing bulk updates of data in native modules with no context switching cost.
