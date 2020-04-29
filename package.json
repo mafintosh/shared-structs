@@ -1,6 +1,6 @@
 {
   "name": "shared-structs",
-  "version": "1.3.3",
+  "version": "1.4.0",
   "description": "Share a struct backed by the same underlying buffer between C and JavaScript",
   "main": "index.js",
   "dependencies": {
