@@ -16,6 +16,9 @@
     "type": "git",
     "url": "https://github.com/mafintosh/shared-structs.git"
   },
+  "engines": {
+    "node": ">=12"
+  },
   "author": "Mathias Buus (@mafintosh)",
   "license": "MIT",
   "bugs": {
