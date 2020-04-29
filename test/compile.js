@@ -37,6 +37,8 @@ tape('complex', function (t) {
       bar c[10];
       bar d[1][2][3];
       int e;
+      int64_t i64;
+      uint64_t u64;
     };
   `)
 
@@ -57,8 +59,14 @@ tape('complex', function (t) {
   foo.d[0][1][1].buf[100] = 11
   t.same(foo.d[0][1][1].buf[100], 11)
 
-  t.same(foo.rawBuffer.length, 32992)
-  t.notSame(foo.rawBuffer, Buffer.alloc(32992))
+  foo.i64 = -755n;
+  t.same(foo.i64, -755n);
+
+  foo.u64 = 777n;
+  t.same(foo.u64, 777n);
+
+  t.same(foo.rawBuffer.length, 33008)
+  t.notSame(foo.rawBuffer, Buffer.alloc(33008))
 
   const fooClone = structs.foo(foo.rawBuffer)
 
@@ -67,7 +75,9 @@ tape('complex', function (t) {
   t.same(fooClone.b[0][10], 0.1)
   t.same(fooClone.c[0].buf[42], 10)
   t.same(fooClone.d[0][1][1].buf[100], 11)
-  t.same(fooClone.rawBuffer.length, 32992)
+  t.same(fooClone.i64, -755n);
+  t.same(fooClone.u64, 777n);
+  t.same(fooClone.rawBuffer.length, 33008)
 
   t.ok(fooClone.rawBuffer === foo.rawBuffer)
 
