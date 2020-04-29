@@ -263,7 +263,7 @@ function times (a, b) {
 }
 
 function validId (n) {
-  return /^[a-z_]([a-z0-9_])*$/i.test(n)
+  return /^[a-z_]([a-z0-9_.])*$/i.test(n)
 }
 
 function evalNumber (expr) {
