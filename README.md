@@ -92,7 +92,7 @@ console.log(strings.decode(struct.buf))
 
 If you have your structs defined in a .h (or any file) there is a
 helper included in `require('shared-structs/require')` that can require
-these and perse them then as you would any other .js file
+these and parse them then as you would any other .js file
 
 ```js
 const structs = require('shared-structs/require')('file.h')
