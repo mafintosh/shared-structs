@@ -83,3 +83,37 @@ tape('complex', function (t) {
 
   t.end()
 })
+
+tape('view parse', function (t) {
+  const structs = compile(`
+    struct foo {
+    uint32_t magic1;
+    uint32_t magic2;
+    uint32_t magic3;
+    uint32_t magic4;
+    uint32_t magic5;
+    };
+  `)
+
+  const struct1 = structs.foo()
+
+  struct1.magic1 = 1
+  struct1.magic2 = 2
+  struct1.magic3 = 3
+  struct1.magic4 = 4
+  struct1.magic5 = 5
+
+  const tmp = Buffer.allocUnsafe(1) // to force unalignment of the next buf
+  const buf = Buffer.allocUnsafe(struct1.rawBuffer.length)
+  struct1.rawBuffer.copy(buf, 0)
+
+  let struct2 = structs.foo(buf)
+
+  t.same(struct1.magic1, struct2.magic1)
+  t.same(struct1.magic2, struct2.magic2)
+  t.same(struct1.magic3, struct2.magic3)
+  t.same(struct1.magic4, struct2.magic4)
+  t.same(struct1.magic5, struct2.magic5)
+
+  t.end()
+})
