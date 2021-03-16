@@ -123,8 +123,8 @@ function arrayView (type, offset, size) {
     if (!offset) return 'this.rawBuffer.slice(offset, offset + ' + size + ')'
     return 'this.rawBuffer.slice(offset + ' + offset + ', offset + ' + (offset + size) + ')'
   }
-  if (!offset) return 'new ' + a + '(this.rawArrayBuffer, offset, ' + (size / typeSize(a)) + ')'
-  return 'new ' + a + '(this.rawArrayBuffer, offset + ' + offset + ', ' + (size / typeSize(a)) + ')'
+  if (!offset) return 'new ' + a + '(this.rawArrayBuffer, this.rawBuffer.byteOffset + offset, ' + (size / typeSize(a)) + ')'
+  return 'new ' + a + '(this.rawArrayBuffer, this.rawBuffer.byteOffset + ' + offset + ', ' + (size / typeSize(a)) + ')'
 }
 
 function typeSize (a) {
