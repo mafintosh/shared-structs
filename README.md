@@ -75,11 +75,11 @@ Options include:
 
 ## Writing strings
 
-There is a small helper included in `require('shared-structs/strings')` that
+There is a small helper included in `require('shared-structs/string')` that
 allows you to encode/decode c style strings into char buffers
 
 ```js
-const strings = require('shared-structs/strings')
+const strings = require('shared-structs/string')
 
 // encode
 strings.encode('hello world', struct.buf)
