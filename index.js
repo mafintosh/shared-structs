@@ -142,6 +142,10 @@ function typeSize (a) {
     case 'Uint16Array':
     case 'Int16Array':
     return 2
+
+    case 'Uint8Array':
+    case 'Int8Array':
+    return 1
   }
 
   return 0
@@ -162,9 +166,11 @@ function arrayType (type) {
     case 'uint8_t':
     case 'bool':
     case 'byte':
-    case 'int8_t':
     case 'char':
-    return 'Buffer'
+    return 'Uint8Array'
+
+    case 'int8_t':
+    return 'Int8Array'
 
     case 'int16_t':
     return 'Int16Array'

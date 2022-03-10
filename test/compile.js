@@ -117,3 +117,20 @@ tape('view parse', function (t) {
 
   t.end()
 })
+
+tape("signed_bytes", function (t) {
+  const structs = compile(`
+  struct foo {
+    uint8_t ub;
+    int8_t ib;
+  };`);
+
+  const foo = structs.foo();
+
+  foo.ub = 200;
+  foo.ib = -100;
+
+  t.same(foo.ub, 200);
+  t.same(foo.ib, -100);
+  t.end();
+});
